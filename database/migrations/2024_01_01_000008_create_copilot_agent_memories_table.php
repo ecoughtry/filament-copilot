@@ -10,13 +10,17 @@ return new class extends Migration
     {
         Schema::create('copilot_agent_memories', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->morphs('participant');
-            $table->string('panel_id')->index();
-            $table->nullableMorphs('tenant');
-            $table->string('key')->index();
+            $table->string('participant_type', 150);
+            $table->unsignedBigInteger('participant_id');
+            $table->string('panel_id', 100)->index();
+            $table->string('tenant_type', 150)->nullable();
+            $table->unsignedBigInteger('tenant_id')->nullable();
+            $table->string('key', 150)->index();
             $table->text('value');
             $table->timestamps();
 
+            $table->index(['participant_type', 'participant_id']);
+            $table->index(['tenant_type', 'tenant_id']);
             $table->unique(
                 ['participant_type', 'participant_id', 'panel_id', 'tenant_type', 'tenant_id', 'key'],
                 'copilot_memory_unique'

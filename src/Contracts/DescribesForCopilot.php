@@ -9,5 +9,5 @@ interface DescribesForCopilot
     /**
      * Provide a human-readable description of this component for the AI agent.
      */
-    public function copilotDescription(): string;
+    public function copilotDescription(): ?string;
 }

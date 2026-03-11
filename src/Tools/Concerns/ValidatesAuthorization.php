@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 
 trait ValidatesAuthorization
 {
+    protected function authorizeViewAny(string $resourceClass): bool
+    {
+        if (! config('filament-copilot.respect_authorization', true)) {
+            return true;
+        }
+
+        return $resourceClass::canViewAny();
+    }
+
     protected function authorizeView(string $resourceClass, Model $record): bool
     {
         if (! config('filament-copilot.respect_authorization', true)) {

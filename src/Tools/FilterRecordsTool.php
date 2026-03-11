@@ -33,6 +33,10 @@ class FilterRecordsTool extends BaseTool
             return "Resource '{$request->get('resource')}' not found.";
         }
 
+        if (! $this->authorizeViewAny($resourceClass)) {
+            return 'You are not authorized to filter records for this resource.';
+        }
+
         $modelClass = $resourceClass::getModel();
         $filtersRaw = $request->get('filters');
         $filters = is_string($filtersRaw) ? json_decode($filtersRaw, true) : $filtersRaw;

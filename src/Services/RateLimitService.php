@@ -198,19 +198,31 @@ class RateLimitService
 
     protected function getTokensInLastHour(Model $user, string $panelId, ?Model $tenant): int
     {
-        return CopilotTokenUsage::query()
+        $query = CopilotTokenUsage::query()
             ->forParticipant($user)
             ->forPanel($panelId)
-            ->where('created_at', '>=', now()->subHour())
-            ->sum('total_tokens');
+            ->where('created_at', '>=', now()->subHour());
+
+        if ($tenant) {
+            $query->where('tenant_type', $tenant->getMorphClass())
+                ->where('tenant_id', $tenant->getKey());
+        }
+
+        return (int) $query->sum('total_tokens');
     }
 
     protected function getTokensInLastDay(Model $user, string $panelId, ?Model $tenant): int
     {
-        return CopilotTokenUsage::query()
+        $query = CopilotTokenUsage::query()
             ->forParticipant($user)
             ->forPanel($panelId)
-            ->where('created_at', '>=', now()->subDay())
-            ->sum('total_tokens');
+            ->where('created_at', '>=', now()->subDay());
+
+        if ($tenant) {
+            $query->where('tenant_type', $tenant->getMorphClass())
+                ->where('tenant_id', $tenant->getKey());
+        }
+
+        return (int) $query->sum('total_tokens');
     }
 }

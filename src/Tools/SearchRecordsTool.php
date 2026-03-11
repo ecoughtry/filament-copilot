@@ -33,6 +33,10 @@ class SearchRecordsTool extends BaseTool
             return "Resource '{$request->get('resource')}' not found.";
         }
 
+        if (! $this->authorizeViewAny($resourceClass)) {
+            return 'You are not authorized to search records for this resource.';
+        }
+
         $modelClass = $resourceClass::getModel();
         $searchTerm = $request->get('query');
         $limit = min((int) ($request->get('limit') ?? 10), 50);

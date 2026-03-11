@@ -11,7 +11,7 @@ use Laravel\Ai\Contracts\Tool;
  */
 trait HasCopilotWidgetContext
 {
-    public function copilotWidgetDescription(): string
+    public function copilotWidgetDescription(): ?string
     {
         return 'Widget: '.class_basename(static::class);
     }

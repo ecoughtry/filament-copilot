@@ -11,7 +11,7 @@ use Laravel\Ai\Contracts\Tool;
  */
 trait HasCopilotPageContext
 {
-    public function copilotPageDescription(): string
+    public function copilotPageDescription(): ?string
     {
         return 'Page: '.static::getNavigationLabel();
     }

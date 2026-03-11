@@ -43,7 +43,7 @@ class ReadInfolistTool extends BaseTool
             return 'You are not authorized to view this record.';
         }
 
-        $this->audit(AuditAction::RecordRead, $resourceClass, $record);
+        $this->audit(AuditAction::RecordRead, $resourceClass, (string) $record->getKey());
 
         // Check if the resource has a ViewRecord page with an infolist
         $pages = $resourceClass::getPages();

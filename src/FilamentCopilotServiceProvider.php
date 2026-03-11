@@ -24,16 +24,7 @@ class FilamentCopilotServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->hasConfigFile()
             ->hasRoute('web')
-            ->hasMigrations([
-                'create_copilot_conversations_table',
-                'create_copilot_messages_table',
-                'create_copilot_tool_calls_table',
-                'create_copilot_plans_table',
-                'create_copilot_audit_logs_table',
-                'create_copilot_rate_limits_table',
-                'create_copilot_token_usages_table',
-                'create_copilot_agent_memories_table',
-            ])
+            ->discoversMigrations()
             ->hasCommand(InstallCommand::class);
     }
 

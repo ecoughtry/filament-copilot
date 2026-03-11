@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Concerns;
 
+use Illuminate\Database\Eloquent\Model;
 use Laravel\Ai\Contracts\Tool;
 
 /**
@@ -11,7 +12,7 @@ use Laravel\Ai\Contracts\Tool;
  */
 trait HasCopilotContext
 {
-    public function copilotResourceDescription(): string
+    public function copilotResourceDescription(): ?string
     {
         $model = static::getModel();
         $label = static::getModelLabel();
@@ -20,7 +21,7 @@ trait HasCopilotContext
         return "Manages {$pluralLabel} ({$model}). Label: {$label}.";
     }
 
-    public function copilotRecordDescription($record): array
+    public function copilotRecordDescription(Model $record): array
     {
         $label = static::getModelLabel();
         $key = $record->getKey();

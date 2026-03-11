@@ -34,6 +34,10 @@ class SortRecordsTool extends BaseTool
             return "Resource '{$request->get('resource')}' not found.";
         }
 
+        if (! $this->authorizeViewAny($resourceClass)) {
+            return 'You are not authorized to view records for this resource.';
+        }
+
         $modelClass = $resourceClass::getModel();
         $column = $request->get('column');
         $direction = in_array($request->get('direction'), ['asc', 'desc']) ? $request->get('direction') : 'asc';

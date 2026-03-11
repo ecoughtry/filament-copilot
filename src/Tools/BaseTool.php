@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Tools;
 
+use EslamRedaDiv\FilamentCopilot\Events\CopilotToolExecuted;
+use EslamRedaDiv\FilamentCopilot\Models\CopilotToolCall;
 use EslamRedaDiv\FilamentCopilot\Tools\Concerns\LogsAudit;
 use EslamRedaDiv\FilamentCopilot\Tools\Concerns\ValidatesAuthorization;
 use Illuminate\Database\Eloquent\Model;
@@ -39,5 +41,25 @@ abstract class BaseTool implements Tool
         $this->tenant = $tenant;
 
         return $this;
+    }
+
+    /**
+     * Dispatch a CopilotToolExecuted event for this tool.
+     */
+    protected function dispatchToolExecuted(string $toolName, string $result, ?string $messageId = null, ?array $input = null): void
+    {
+        $toolCall = new CopilotToolCall([
+            'message_id' => $messageId,
+            'tool_name' => $toolName,
+            'input' => $input ?? [],
+            'output' => $result,
+            'status' => 'completed',
+        ]);
+
+        event(new CopilotToolExecuted(
+            toolCall: $toolCall,
+            toolName: $toolName,
+            result: $result,
+        ));
     }
 }

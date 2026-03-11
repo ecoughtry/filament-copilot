@@ -14,5 +14,5 @@ interface ProvidesWidgetData
     /**
      * Describe what this widget shows, for the AI agent's context.
      */
-    public function copilotWidgetDescription(): string;
+    public function copilotWidgetDescription(): ?string;
 }

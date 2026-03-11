@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Discovery;
 
+use EslamRedaDiv\FilamentCopilot\Concerns\HasCopilotPageContext;
 use Filament\Facades\Filament;
 
 class PageInspector
@@ -24,12 +25,20 @@ class PageInspector
         $pages = [];
 
         foreach ($panel->getPages() as $pageClass) {
-            $pages[] = [
+            $pageData = [
                 'page' => $pageClass,
                 'label' => $pageClass::getNavigationLabel(),
                 'slug' => $pageClass::getSlug(),
                 'url' => $pageClass::getUrl(),
             ];
+
+            if (in_array(HasCopilotPageContext::class, class_uses_recursive($pageClass))) {
+                $instance = app($pageClass);
+                $pageData['copilot_description'] = $instance->copilotPageDescription();
+                $pageData['copilot_tools'] = $instance->copilotTools();
+            }
+
+            $pages[] = $pageData;
         }
 
         return $pages;
@@ -49,7 +58,13 @@ class PageInspector
         $lines = ['Available Pages:'];
 
         foreach ($pages as $page) {
-            $lines[] = "- {$page['label']} (/{$page['slug']})";
+            $line = "- {$page['label']} (/{$page['slug']})";
+
+            if (! empty($page['copilot_description'])) {
+                $line .= " — {$page['copilot_description']}";
+            }
+
+            $lines[] = $line;
         }
 
         return implode("\n", $lines);

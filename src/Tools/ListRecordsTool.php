@@ -33,6 +33,10 @@ class ListRecordsTool extends BaseTool
             return "Resource '{$request->get('resource')}' not found.";
         }
 
+        if (! $this->authorizeViewAny($resourceClass)) {
+            return 'You are not authorized to view records for this resource.';
+        }
+
         $modelClass = $resourceClass::getModel();
         $perPage = min((int) ($request->get('per_page') ?? 10), 50);
         $page = max((int) ($request->get('page') ?? 1), 1);

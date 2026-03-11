@@ -17,7 +17,6 @@ use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
-use Laravel\Ai\Contracts\Tool;
 use Livewire\Livewire;
 
 class FilamentCopilotPlugin implements Plugin
@@ -38,7 +37,15 @@ class FilamentCopilotPlugin implements Plugin
 
     protected bool $shouldApprovePlan = false;
 
-    /** @var array<Tool> */
+    protected ?int $maxSteps = null;
+
+    protected ?float $temperature = null;
+
+    protected ?string $systemPrompt = null;
+
+    protected ?int $maxConversationMessages = null;
+
+    /** @var array<\Laravel\Ai\Contracts\Tool> */
     protected array $globalTools = [];
 
     protected array $quickActions = [];
@@ -81,7 +88,7 @@ class FilamentCopilotPlugin implements Plugin
 
     public function isManagementEnabled(): bool
     {
-        return $this->managementEnabled;
+        return $this->managementEnabled || config('filament-copilot.management.enabled', false);
     }
 
     public function managementGuard(?string $guard): static
@@ -132,6 +139,54 @@ class FilamentCopilotPlugin implements Plugin
         return $this->shouldThink || config('filament-copilot.agent.should_think', false);
     }
 
+    public function maxSteps(int $maxSteps): static
+    {
+        $this->maxSteps = $maxSteps;
+
+        return $this;
+    }
+
+    public function getMaxSteps(): int
+    {
+        return $this->maxSteps ?? config('filament-copilot.agent.max_steps', 10);
+    }
+
+    public function temperature(float $temperature): static
+    {
+        $this->temperature = $temperature;
+
+        return $this;
+    }
+
+    public function getTemperature(): float
+    {
+        return $this->temperature ?? config('filament-copilot.agent.temperature', 0.3);
+    }
+
+    public function systemPrompt(?string $prompt): static
+    {
+        $this->systemPrompt = $prompt;
+
+        return $this;
+    }
+
+    public function getSystemPrompt(): ?string
+    {
+        return $this->systemPrompt ?? config('filament-copilot.system_prompt');
+    }
+
+    public function maxConversationMessages(int $max): static
+    {
+        $this->maxConversationMessages = $max;
+
+        return $this;
+    }
+
+    public function getMaxConversationMessages(): int
+    {
+        return $this->maxConversationMessages ?? config('filament-copilot.chat.max_conversation_messages', 50);
+    }
+
     public function planning(bool $shouldPlan = true): static
     {
         $this->shouldPlan = $shouldPlan;
@@ -165,7 +220,7 @@ class FilamentCopilotPlugin implements Plugin
 
     public function getGlobalTools(): array
     {
-        return $this->globalTools;
+        return ! empty($this->globalTools) ? $this->globalTools : config('filament-copilot.global_tools', []);
     }
 
     public function quickActions(array $actions): static

@@ -6,6 +6,8 @@ namespace EslamRedaDiv\FilamentCopilot\Macros;
 
 use EslamRedaDiv\FilamentCopilot\Enums\CapabilityType;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Infolists\Components\Entry;
 use Filament\Schemas\Components\Component as SchemaComponent;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Filters\BaseFilter;
@@ -35,6 +37,14 @@ class MacroRegistrar
 
         if (class_exists(Action::class)) {
             $this->registerActionMacros();
+        }
+
+        if (class_exists(BulkAction::class)) {
+            $this->registerBulkActionMacros();
+        }
+
+        if (class_exists(Entry::class)) {
+            $this->registerInfolistEntryMacros();
         }
 
         if (class_exists(Widget::class)) {
@@ -173,8 +183,8 @@ class MacroRegistrar
             return MacroRegistrar::getDescription($this);
         });
 
-        BaseFilter::macro('aiCanFilter', function (bool $canFilter = true, ?string $description = null, bool $needToAsk = false) {
-            MacroRegistrar::setCapability($this, CapabilityType::Filter, $canFilter);
+        BaseFilter::macro('aiCanUse', function (bool $canUse = true, ?string $description = null, bool $needToAsk = false) {
+            MacroRegistrar::setCapability($this, CapabilityType::Filter, $canUse);
             MacroRegistrar::setNeedToAsk($this, CapabilityType::Filter, $needToAsk);
 
             if ($description !== null) {
@@ -221,6 +231,70 @@ class MacroRegistrar
         });
 
         Action::macro('getAiNeedToAsk', function (?CapabilityType $type = null): bool {
+            return MacroRegistrar::getNeedToAsk($this, $type);
+        });
+    }
+
+    protected function registerBulkActionMacros(): void
+    {
+        BulkAction::macro('aiDescription', function (string $description) {
+            MacroRegistrar::setDescription($this, $description);
+
+            return $this;
+        });
+
+        BulkAction::macro('getAiDescription', function (): ?string {
+            return MacroRegistrar::getDescription($this);
+        });
+
+        BulkAction::macro('aiCanExecute', function (bool $canExecute = true, ?string $description = null, bool $needToAsk = false) {
+            MacroRegistrar::setCapability($this, CapabilityType::Execute, $canExecute);
+            MacroRegistrar::setNeedToAsk($this, CapabilityType::Execute, $needToAsk);
+
+            if ($description !== null) {
+                MacroRegistrar::setDescription($this, $description);
+            }
+
+            return $this;
+        });
+
+        BulkAction::macro('getAiCapabilities', function (): array {
+            return MacroRegistrar::getCapabilities($this);
+        });
+
+        BulkAction::macro('getAiNeedToAsk', function (?CapabilityType $type = null): bool {
+            return MacroRegistrar::getNeedToAsk($this, $type);
+        });
+    }
+
+    protected function registerInfolistEntryMacros(): void
+    {
+        Entry::macro('aiDescription', function (string $description) {
+            MacroRegistrar::setDescription($this, $description);
+
+            return $this;
+        });
+
+        Entry::macro('getAiDescription', function (): ?string {
+            return MacroRegistrar::getDescription($this);
+        });
+
+        Entry::macro('aiCanRead', function (bool $canRead = true, ?string $description = null, bool $needToAsk = false) {
+            MacroRegistrar::setCapability($this, CapabilityType::Read, $canRead);
+            MacroRegistrar::setNeedToAsk($this, CapabilityType::Read, $needToAsk);
+
+            if ($description !== null) {
+                MacroRegistrar::setDescription($this, $description);
+            }
+
+            return $this;
+        });
+
+        Entry::macro('getAiCapabilities', function (): array {
+            return MacroRegistrar::getCapabilities($this);
+        });
+
+        Entry::macro('getAiNeedToAsk', function (?CapabilityType $type = null): bool {
             return MacroRegistrar::getNeedToAsk($this, $type);
         });
     }

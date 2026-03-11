@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Tools;
 
+use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use EslamRedaDiv\FilamentCopilot\Services\ExportService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Tools\Request;
@@ -34,10 +35,23 @@ class ExportConversationTool extends BaseTool
         }
 
         $conversationId = $request->get('conversation_id');
+
+        // Verify ownership
+        $conversation = CopilotConversation::find($conversationId);
+
+        if (! $conversation) {
+            return 'Conversation not found.';
+        }
+
+        if ($conversation->participant_type !== $this->user->getMorphClass()
+            || $conversation->participant_id != $this->user->getKey()) {
+            return 'You are not authorized to export this conversation.';
+        }
+
         $content = $this->exportService->toMarkdown($conversationId);
 
         if ($content === null) {
-            return 'Conversation not found.';
+            return 'Failed to export conversation.';
         }
 
         return "Conversation exported as Markdown:\n\n{$content}";

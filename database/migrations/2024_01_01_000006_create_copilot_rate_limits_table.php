@@ -10,9 +10,11 @@ return new class extends Migration
     {
         Schema::create('copilot_rate_limits', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->string('panel_id')->index();
-            $table->nullableMorphs('tenant');
-            $table->nullableMorphs('participant');
+            $table->string('panel_id', 100)->index();
+            $table->string('tenant_type', 150)->nullable();
+            $table->unsignedBigInteger('tenant_id')->nullable();
+            $table->string('participant_type', 150)->nullable();
+            $table->unsignedBigInteger('participant_id')->nullable();
             $table->unsignedInteger('max_messages_per_hour')->default(60);
             $table->unsignedInteger('max_messages_per_day')->default(500);
             $table->unsignedInteger('max_tokens_per_hour')->default(100000);
@@ -23,6 +25,8 @@ return new class extends Migration
             $table->string('blocked_reason')->nullable();
             $table->timestamps();
 
+            $table->index(['tenant_type', 'tenant_id']);
+            $table->index(['participant_type', 'participant_id']);
             $table->index(['panel_id', 'tenant_type', 'tenant_id'], 'copilot_rate_panel_tenant');
             $table->unique(
                 ['panel_id', 'tenant_type', 'tenant_id', 'participant_type', 'participant_id'],
