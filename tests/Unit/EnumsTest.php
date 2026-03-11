@@ -1,0 +1,47 @@
+<?php
+
+use EslamRedaDiv\FilamentCopilot\Enums\AuditAction;
+use EslamRedaDiv\FilamentCopilot\Enums\CapabilityType;
+use EslamRedaDiv\FilamentCopilot\Enums\MessageRole;
+use EslamRedaDiv\FilamentCopilot\Enums\PlanStatus;
+use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
+
+it('has correct MessageRole cases', function () {
+    expect(MessageRole::cases())->toHaveCount(4)
+        ->and(MessageRole::User->value)->toBe('user')
+        ->and(MessageRole::Assistant->value)->toBe('assistant')
+        ->and(MessageRole::System->value)->toBe('system')
+        ->and(MessageRole::Tool->value)->toBe('tool');
+});
+
+it('has correct PlanStatus cases', function () {
+    expect(PlanStatus::cases())->toHaveCount(6)
+        ->and(PlanStatus::Proposed->value)->toBe('proposed')
+        ->and(PlanStatus::Approved->value)->toBe('approved')
+        ->and(PlanStatus::Rejected->value)->toBe('rejected')
+        ->and(PlanStatus::Executing->value)->toBe('executing')
+        ->and(PlanStatus::Completed->value)->toBe('completed')
+        ->and(PlanStatus::Failed->value)->toBe('failed');
+});
+
+it('has correct ToolCallStatus cases', function () {
+    expect(ToolCallStatus::cases())->toHaveCount(5)
+        ->and(ToolCallStatus::Pending->value)->toBe('pending')
+        ->and(ToolCallStatus::Approved->value)->toBe('approved')
+        ->and(ToolCallStatus::Rejected->value)->toBe('rejected')
+        ->and(ToolCallStatus::Executed->value)->toBe('executed')
+        ->and(ToolCallStatus::Failed->value)->toBe('failed');
+});
+
+it('has correct CapabilityType cases', function () {
+    expect(CapabilityType::cases())->toHaveCount(9);
+});
+
+it('has all required AuditAction cases', function () {
+    $actions = AuditAction::cases();
+
+    expect($actions)->toHaveCount(28)
+        ->and(AuditAction::MessageSent->value)->toBe('message_sent')
+        ->and(AuditAction::RecordCreated->value)->toBe('record_created')
+        ->and(AuditAction::RateLimitHit->value)->toBe('rate_limit_hit');
+});
