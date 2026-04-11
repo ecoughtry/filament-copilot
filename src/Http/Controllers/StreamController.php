@@ -98,6 +98,18 @@ class StreamController
 
                 $messages = $conversationManager->getMessagesForAgent($conversation);
 
+                // `addUserMessage()` above has already persisted the current user
+                // message, so `getMessagesForAgent()` returns it as the trailing
+                // row. Extract that content for `prompt:` and drop the row from
+                // the history we pass to `withMessages()`. Otherwise laravel/ai's
+                // `Promptable::stream()` wraps `prompt:` as a NEW user message on
+                // top of the already-present row, duplicating the user's latest
+                // message in every outgoing request body.
+                $lastUserMessage = '';
+                if (! empty($messages) && end($messages)['role'] === 'user') {
+                    $lastUserMessage = array_pop($messages)['content'];
+                }
+
                 $agent->forPanel($panelId)
                     ->forUser($user)
                     ->forTenant($tenant)
@@ -107,13 +119,6 @@ class StreamController
 
                 $provider = $plugin->getProvider();
                 $model = $plugin->getModel();
-
-                $lastUserMessage = '';
-                foreach ($messages as $msg) {
-                    if ($msg['role'] === 'user') {
-                        $lastUserMessage = $msg['content'];
-                    }
-                }
 
                 // Send start event
                 $this->sendSseEvent('start', []);
