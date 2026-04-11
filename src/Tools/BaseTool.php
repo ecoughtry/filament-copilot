@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace EslamRedaDiv\FilamentCopilot\Tools;
 
+use EslamRedaDiv\FilamentCopilot\Enums\MessageRole;
+use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotToolExecuted;
+use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotToolCall;
 use EslamRedaDiv\FilamentCopilot\Tools\Concerns\LogsAudit;
 use Illuminate\Database\Eloquent\Model;
@@ -52,18 +55,46 @@ abstract class BaseTool implements Tool
 
     protected function dispatchToolExecuted(string $toolName, string $result, ?string $messageId = null, ?array $input = null): void
     {
+        $messageId ??= $this->resolveMessageId();
+
         $toolCall = new CopilotToolCall([
             'message_id' => $messageId,
             'tool_name' => $toolName,
-            'input' => $input ?? [],
-            'output' => $result,
-            'status' => 'completed',
+            'tool_input' => $input ?? [],
+            'tool_output' => $result,
+            'status' => ToolCallStatus::Executed,
         ]);
+
+        if ($messageId && config('filament-copilot.audit.enabled', true) && config('filament-copilot.audit.log_tool_calls', true)) {
+            $toolCall->save();
+        }
 
         event(new CopilotToolExecuted(
             toolCall: $toolCall,
             toolName: $toolName,
             result: $result,
         ));
+    }
+
+    protected function resolveMessageId(): ?string
+    {
+        if (! isset($this->panelId, $this->user) || ! $this->conversationId) {
+            return null;
+        }
+
+        $conversation = CopilotConversation::query()
+            ->forPanel($this->panelId)
+            ->forParticipant($this->user)
+            ->forTenant($this->tenant)
+            ->find($this->conversationId);
+
+        if (! $conversation) {
+            return null;
+        }
+
+        return $conversation->messages()
+            ->where('role', MessageRole::User)
+            ->latest('created_at')
+            ->value('id');
     }
 }

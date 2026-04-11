@@ -1,6 +1,7 @@
 <?php
 
 use EslamRedaDiv\FilamentCopilot\Enums\MessageRole;
+use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotMessage;
 use EslamRedaDiv\FilamentCopilot\Services\ConversationManager;
@@ -87,4 +88,30 @@ it('gets messages formatted for agent', function () {
         ->and($messages[0]['role'])->toBe('user')
         ->and($messages[0]['content'])->toBe('Hello')
         ->and($messages[1]['role'])->toBe('assistant');
+});
+
+it('gets messages formatted for chat with tool calls in order', function () {
+    $user = createTestUser();
+    $manager = app(ConversationManager::class);
+    $conversation = $manager->create($user, 'admin');
+
+    $userMessage = $manager->addUserMessage($conversation, 'Generate a report for the last 7 days');
+    $userMessage->toolCalls()->create([
+        'tool_name' => 'run_report',
+        'tool_input' => ['days' => 7],
+        'tool_output' => 'Report generated',
+        'status' => ToolCallStatus::Executed,
+    ]);
+
+    $manager->addAssistantMessage($conversation, 'Done. I generated the report.');
+
+    $messages = $manager->getMessagesForChat($conversation);
+
+    expect($messages)->toHaveCount(3)
+        ->and($messages[0]['role'])->toBe('user')
+        ->and($messages[1]['role'])->toBe('tool_call')
+        ->and($messages[1]['tool_name'])->toBe('run_report')
+        ->and($messages[1]['arguments'])->toMatchArray(['days' => 7])
+        ->and($messages[1]['result'])->toBe('Report generated')
+        ->and($messages[2]['role'])->toBe('assistant');
 });

@@ -136,7 +136,7 @@ class CopilotChat extends Component
         /** @var ConversationManager $conversationManager */
         $conversationManager = app(ConversationManager::class);
 
-        return $conversationManager->getMessagesForAgent($conversation);
+        return $conversationManager->getMessagesForChat($conversation);
     }
 
     public function newConversation(): void
@@ -163,7 +163,6 @@ class CopilotChat extends Component
             ->forPanel($panelId)
             ->forParticipant($user)
             ->forTenant($tenant)
-            ->with('messages')
             ->find($conversationId);
 
         if (! $conversation) {
@@ -171,12 +170,7 @@ class CopilotChat extends Component
         }
 
         $this->conversationId = $conversationId;
-        $this->messages = $conversation->messages
-            ->map(fn ($m) => [
-                'role' => $m->role->value,
-                'content' => $m->content,
-            ])
-            ->toArray();
+        $this->messages = $this->getConversationMessages($conversation);
         $this->dispatch('copilot-conversation-changed', conversationId: $conversationId);
     }
 

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot\Http\Controllers;
 
 use EslamRedaDiv\FilamentCopilot\Agent\CopilotAgent;
+use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotMessageSent;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotResponseReceived;
+use EslamRedaDiv\FilamentCopilot\Events\CopilotToolExecuted;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
+use EslamRedaDiv\FilamentCopilot\Models\CopilotToolCall;
 use EslamRedaDiv\FilamentCopilot\Services\ConversationManager;
 use EslamRedaDiv\FilamentCopilot\Services\RateLimitService;
 use EslamRedaDiv\FilamentCopilot\Services\ToolRegistry;
@@ -83,10 +86,10 @@ class StreamController
             $conversation = $conversationManager->create($user, $panelId, $tenant);
         }
 
-        $conversationManager->addUserMessage($conversation, $content);
+        $userMessage = $conversationManager->addUserMessage($conversation, $content);
         event(new CopilotMessageSent($conversation, $content, $panelId));
 
-        return $this->sseResponse(function () use ($conversation, $conversationManager, $user, $panelId, $tenant, $rateLimitService, $plugin) {
+        return $this->sseResponse(function () use ($conversation, $conversationManager, $user, $panelId, $tenant, $rateLimitService, $plugin, $userMessage) {
             $this->sendSseEvent('conversation', ['id' => $conversation->id]);
 
             try {
@@ -131,6 +134,11 @@ class StreamController
 
                 $responseText = '';
                 $usage = null;
+                $shouldLogToolCalls = config('filament-copilot.audit.enabled', true)
+                    && config('filament-copilot.audit.log_tool_calls', true);
+
+                /** @var array<string, CopilotToolCall> $toolCallsByProviderId */
+                $toolCallsByProviderId = [];
 
                 // Stream real-time chunks from the AI provider
                 foreach ($streamResponse as $event) {
@@ -143,6 +151,14 @@ class StreamController
                             'tool_name' => $event->toolCall->name,
                             'arguments' => $event->toolCall->arguments,
                         ]);
+
+                        if ($shouldLogToolCalls) {
+                            $toolCallsByProviderId[$event->toolCall->id] = $userMessage->toolCalls()->create([
+                                'tool_name' => $event->toolCall->name,
+                                'tool_input' => $event->toolCall->arguments,
+                                'status' => ToolCallStatus::Pending,
+                            ]);
+                        }
                     } elseif ($event instanceof \Laravel\Ai\Streaming\Events\ToolResult) {
                         $rawResult = is_string($event->toolResult->result) ? $event->toolResult->result : json_encode($event->toolResult->result);
 
@@ -153,6 +169,33 @@ class StreamController
                             'success' => $event->successful,
                             'error' => $event->error,
                         ]);
+
+                        if ($shouldLogToolCalls) {
+                            $providerToolCallId = $event->toolResult->id;
+
+                            $toolCall = $toolCallsByProviderId[$providerToolCallId] ?? null;
+
+                            if (! $toolCall) {
+                                $toolCall = $userMessage->toolCalls()->create([
+                                    'tool_name' => $event->toolResult->name,
+                                    'tool_input' => $event->toolResult->arguments,
+                                    'status' => ToolCallStatus::Pending,
+                                ]);
+
+                                $toolCallsByProviderId[$providerToolCallId] = $toolCall;
+                            }
+
+                            $toolCall->update([
+                                'status' => $event->successful ? ToolCallStatus::Executed : ToolCallStatus::Failed,
+                                'tool_output' => $rawResult,
+                            ]);
+
+                            event(new CopilotToolExecuted(
+                                toolCall: $toolCall->fresh(),
+                                toolName: $toolCall->tool_name,
+                                result: $rawResult,
+                            ));
+                        }
                     } elseif ($event instanceof \Laravel\Ai\Streaming\Events\StreamEnd) {
                         $usage = $event->usage;
                     }

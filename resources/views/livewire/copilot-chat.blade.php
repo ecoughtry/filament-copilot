@@ -175,7 +175,10 @@
                                     this.$nextTick(() => this.scrollToBottom());
                                     break;
                                 case 'tool_result': {
-                                    const idx = this.toolCalls.findIndex(t => t.name === data.tool_name);
+                                    const idx = this.toolCalls.findIndex(t =>
+                                        (data.tool_id && t.id === data.tool_id) ||
+                                        (!data.tool_id && t.name === data.tool_name)
+                                    );
                                     if (idx !== -1) {
                                         this.toolCalls[idx].status = data.success ? 'done' : 'error';
                                         this.toolCalls[idx].result = data.result;
@@ -501,7 +504,8 @@
                     </div>
                     <div
                         class="min-w-0 max-w-[85%] rounded-2xl rounded-tl-md px-3.5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <div class="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none wrap-break-word">
+                        <div
+                            class="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none wrap-break-word">
                             <p x-text="streamedContent" class="whitespace-pre-wrap"></p>
                         </div>
                         <span x-show="isStreaming"

@@ -73,7 +73,7 @@ class CopilotAgent implements Agent, Conversational, HasMiddleware, HasTools
         return $this;
     }
 
-    public function withSystemPrompt(string $prompt): static
+    public function withSystemPrompt(?string $prompt): static
     {
         $this->systemPrompt = $prompt;
 

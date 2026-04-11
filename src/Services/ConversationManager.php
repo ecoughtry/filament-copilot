@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace EslamRedaDiv\FilamentCopilot\Services;
 
 use EslamRedaDiv\FilamentCopilot\Enums\MessageRole;
+use EslamRedaDiv\FilamentCopilot\Enums\ToolCallStatus;
 use EslamRedaDiv\FilamentCopilot\Events\CopilotConversationCreated;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotMessage;
+use EslamRedaDiv\FilamentCopilot\Models\CopilotToolCall;
 use Illuminate\Database\Eloquent\Model;
 
 class ConversationManager
@@ -107,6 +109,43 @@ class ConversationManager
                 'role' => $message->role->value,
                 'content' => $message->content,
             ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Get messages for chat rendering, including persisted tool calls.
+     */
+    public function getMessagesForChat(CopilotConversation $conversation): array
+    {
+        return $conversation->messages()
+            ->with('toolCalls')
+            ->orderBy('created_at')
+            ->get()
+            ->flatMap(function (CopilotMessage $message): array {
+                $messages = [[
+                    'role' => $message->role->value,
+                    'content' => $message->content,
+                ]];
+
+                foreach ($message->toolCalls->sortBy('created_at') as $toolCall) {
+                    /** @var CopilotToolCall $toolCall */
+                    $isFailed = $toolCall->status === ToolCallStatus::Failed;
+
+                    $messages[] = [
+                        'role' => 'tool_call',
+                        'tool_name' => $toolCall->tool_name,
+                        'arguments' => $toolCall->tool_input,
+                        'result' => $toolCall->tool_output,
+                        'success' => ! $isFailed,
+                        'error' => $isFailed ? ($toolCall->tool_output ?: 'Tool execution failed.') : null,
+                        'content' => $toolCall->tool_output ?? '',
+                        'status' => $toolCall->status->value,
+                    ];
+                }
+
+                return $messages;
+            })
             ->values()
             ->toArray();
     }
